@@ -282,7 +282,7 @@ function bubbleWand() {
   bubbleSize = map(lev, 0, 0.12, 10, 150);
   bubbleSize = constrain(bubbleSize, 5, 100);
 
-  bubbleNumber = floor(map(lev, 0, 0.12, 0, 20));
+  bubbleNumber = floor(map(lev, 0, 0.12, 0, 30));
   bubbleNumber = constrain(bubbleNumber, 0, 50);
   /*
   if (random() < emitRate) {
@@ -290,7 +290,7 @@ function bubbleWand() {
   }
     */
 
-  if (lev > 0.03) {
+  if (lev > 0.01) {
     for (let i = 0; i < bubbleNumber; i++) {
       bubbles.push(
         new Bubble(mouseX - 70 + random(-20, 20), mouseY - 10 + random(-20, 20))
@@ -412,29 +412,29 @@ function mousePressed() {
 function dandelion() {
   image(img, 0, 0,800, 600);
 
-  let blowCount = floor(map(lev, 0, 0.03, 0, seeds.length));
+  let blowCount = floor(map(lev, 0, 0.01, 0, seeds.length));
   blowCount = constrain(blowCount, 0, seeds.length);
   if (seeds.length === 0) {
     for (let i = 0; i < 150; i++) {
       //0
       let seedX = width / 2 + random(-30, 30);
-      let seedY = height / 2 + random(-30, 30);
+      let seedY = 300 + random(-30, 30);
       seeds.push(new Seed(seedX, seedY));
       //1
-      let seedX1 = width / 2 + random(-50, 50);
-      let seedY1 = height / 2 + random(-50, 50);
+      let seedX1 = 100 + random(-50, 50);
+      let seedY1 = 350 + random(-50, 50);
       seeds.push(new Seed(seedX1, seedY1));
       //2
-      let seedX2 = width / 2 + random(-20, 20);
-      let seedY2 = height / 2 + random(-20, 20);
+      let seedX2 = 200 + random(-20, 20);
+      let seedY2 = 450 + random(-20, 20);
       seeds.push(new Seed(seedX2, seedY2));
       //3
-      let seedX3 = width / 2 + random(-70, 70);
-      let seedY3 = height / 2 + random(-70, 70);
+      let seedX3 = 600 + random(-70, 70);
+      let seedY3 = 500 + random(-70, 70);
       seeds.push(new Seed(seedX3, seedY3));
       //4
-      let seedX4 = width / 2 + random(-35, 35);
-      let seedY4 = height / 2 + random(-35, 35);
+      let seedX4 = 700 + random(-35, 35);
+      let seedY4 = 250 + random(-35, 35);
       seeds.push(new Seed(seedX4, seedY4));
     }
   }
@@ -669,7 +669,7 @@ function birthdayCake() {
  
 }
 
-// 蜡烛火焰已集成在蜡烛环循环中
+
 
 // ================= 自画像 =================
 function selfProtrait() {
@@ -873,11 +873,10 @@ class Confetti {
     this.vx = random(-3, 3);
     this.vy = random(-6, -2);
 
-    this.w = random(3, 6);     // 彩带宽度
-    this.h = random(12, 18);   // 彩带长度
-    this.angle = random(360);  // 彩带自身旋转角度
-    this.spin = random(-5, 5); // 旋转速度
-
+    this.w = random(3, 6);     
+    this.h = random(12, 18);   
+    this.angle = random(360);  
+    this.spin = random(-5, 5); 
     this.color = color(random(255), random(255), random(255));
   }
 
@@ -905,7 +904,7 @@ class Confetti {
     noStroke();
     fill(this.color);
     rectMode(CENTER);
-    rect(0, 0, this.w, this.h, 2); // 小纸条
+    rect(0, 0, this.w, this.h, 2); 
     pop();
   }
 }
