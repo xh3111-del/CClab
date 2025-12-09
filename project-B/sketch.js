@@ -10,33 +10,39 @@ let bubbleSize;
 let mic;
 let timer = 0;
 let img;
-// 初始化定时器相关变量（移除重复声明）
 let timer2 = 0;
-let interval = 400;
+let interval = 300;
 let current = 0;
 let lastSwitchTime = 0;
-let a = 1000; // 每个阶段的长度（帧数），你可以根据需要调整
+let stageLength = 600;
 let cam;
 let seeds = [];
-let mist = [];
 
-// 全局音量变量，确保其它函数可以读取
+
 let lev = 0;
 
-// 舞台控制：0=selfPortrait,1=cam,2=bubbleWand,3=dandelion,4=birthdayCake
 let stage = 0;
 let playOnce = [false, false, false, false, false];
+let fogs = [];
+let fogCount = 900;
+let blowing = false;
+let t = 0;
+let timer3 = 0;
+
+let confetti = [];
+let explode = false;
+let popSound;
+
+
 
 function preload() {
-  // 请确保这些文件存在，若没有就替换成你有的音频或注释掉相应 loadSound 行
-  // 我在下面对播放做了安全检查（isLoaded + isPlaying），即使不存在文件也不会崩溃（但会报浏览器媒体加载失败）
   mySound = loadSound("assets/mySound.mp3");
   mySound2 = loadSound("assets/mySound2.mp3");
-  // 如果没有这些文件，也不会阻止程序运行（但音效自然不会播放）
   mySound3 = loadSound("assets/mySound3.mp3");
   mySound4 = loadSound("assets/mySound4.mp3");
   mySound5 = loadSound("assets/mySound5.mp3");
-
+  mySound6 = loadSound("assets/pop.mp3");
+  mysound7 =loadSound("assets/blow.mp3");
   img = loadImage("assets/pugongying.png");
 }
 
@@ -54,18 +60,16 @@ function setup() {
   cam.size(640, 480);
   cam.hide();
   let blowThreshold = 0.05;
+  for (let i = 0; i < fogCount; i++) {
+    fogs.push(new Fog(random(width), random(height)));
+  }
+
+  // 1 秒后触发吹气
+  setTimeout(() => blowing = true, 1000);
 }
 
+
 function draw() {
-  push();
-    colorMode(RGB);
-    fill(255);
-    noStroke();
-    textSize(25);
-    text("Camera stage — press 's' to save snapshot", 10, 20);
-    text("come some music? click here to play!",10,40);
-    pop();
-  // 更新全局音量
   if (mic && typeof mic.getLevel === "function") {
     lev = mic.getLevel();
   } else {
@@ -73,99 +77,184 @@ function draw() {
   }
 
   timer++;
+if (stage<=2){
+  stage = floor(timer / stageLength);}
+  if (stage > 6) {
+    stage = 6;
+  }
 
-  // 计算舞台（每 a 帧为一个阶段，共 5 个阶段）
-  stage = floor(timer / a);
-  if (stage > 4) stage = 4; // 限制在 0..4
-
-  // 当进入某个阶段时播放一次音效（如果可用）
-  if (!playOnce[stage]) {
+  /* if (!playOnce[stage]) {
     playStageSound(stage);
-    // 重置可能的 stage-locals
     playOnce[stage] = true;
-  }
-
-  // 根据 stage 显示不同画面
+  }*/
+  
   if (stage === 0) {
-    selfProtrait();
-  } else if (stage === 1) {
+     selfProtrait();
+    mist1();
+ }
+   else if(stage ===1){
+    push();
+    stageLength = 100;
+    pop();
+  userGuide();
+  }
+   else if (stage === 2) {
     cameraPicture();
-    
-  } else if (stage === 2) {
-    bubbleWand();
+    //mist1();
   } else if (stage === 3) {
-    dandelion();
+    bubbleWand();
   } else if (stage === 4) {
+    dandelion();
+  } else if (stage === 5) {
     birthdayCake();
+    drawFlame();
   }
+  else if(stage ===6){
+    birthdayCake();
+    Celebration();
+    
+  }
+ 
+
+if(stage===3&&lev>0.02){
+  console.log(stage);
+  console.log("ddddd");
+  stage = 5;
+}
+if(stage ===4&&lev>0.02){
+  stage ===6;
 }
 
-// 防止在 draw 每帧疯狂触发播放：只在进入阶段时播放一次（并且检查 isLoaded/isPlaying）
+}
+
+
+
+//BGM
 function playStageSound(stageIndex) {
-  // 你可以根据需要把不需要的音频设为 null 或移除
-  try {
-    if (stageIndex === 0 && mySound && mySound.isLoaded && mySound.isLoaded()) {
-      if (!mySound.isPlaying()){ mySound.play();}
+  if (stageIndex === 1 && mySound && mySound.isLoaded && mySound.isLoaded()&&mySound7&&mySound7.isLoaded()) {
+    if (!mySound.isPlaying()&&!mySound7.isPlaying()) {
+      mySound.play();
+      mySound7.play();
     }
-    if (stageIndex === 1 && mySound2 && mySound2.isLoaded && mySound2.isLoaded()) {
-      if (!mySound2.isPlaying()) {
-        mySound.stop();
-      mySound2.play();}
+  }
+  if (
+    stageIndex === 2 &&
+    mySound2 &&
+    mySound2.isLoaded &&
+    mySound2.isLoaded()
+  ) {
+    if (!mySound2.isPlaying()) {
+      mySound.stop();
+      mySound2.play();
     }
-    if (stageIndex === 2 && mySound3 && mySound3.isLoaded && mySound3.isLoaded()) {
-      if (!mySound3.isPlaying()) {
-        mySound2.stop();
-        mySound3.play();}
+  }
+  if (
+    stageIndex === 3 &&
+    mySound3 &&
+    mySound3.isLoaded &&
+    mySound3.isLoaded()
+  ) {
+    if (!mySound3.isPlaying()) {
+      mySound2.stop();
+      mySound3.play();
     }
-    if (stageIndex === 3 && mySound4 && mySound4.isLoaded && mySound4.isLoaded()) {
-      if (!mySound4.isPlaying()) {
-        mySound3.stop();
-      mySound4.play();}
+  }
+  if (
+    stageIndex === 4 &&
+    mySound4 &&
+    mySound4.isLoaded &&
+    mySound4.isLoaded()
+  ) {
+    if (!mySound4.isPlaying()) {
+      mySound3.stop();
+      mySound4.play();
     }
-    if (stageIndex === 4 && mySound5 && mySound5.isLoaded && mySound5.isLoaded()) {
-      if (!mySound5.isPlaying()) {
-        mySound4.stop();
-      mySound5.play();}
+  }
+  if (
+    stageIndex === 5 &&
+    mySound5 &&
+    mySound5.isLoaded &&
+    mySound5.isLoaded()
+  ) {
+    if (!mySound5.isPlaying()) {
+      mySound4.stop();
+      mySound5.play();
     }
-  } catch (e) {
-    // 若浏览器阻止自动播放或加载失败，则忽略错误，程序继续执行
-    // console.warn("音频播放失败或不存在：", e);
+  }
+   if (
+    stageIndex === 6 &&
+    mySound6 &&
+    mySound6.isLoaded &&
+    mySound6.isLoaded()
+  ) {
+    if (!mySound6.isPlaying()) {
+      mySound5.stop();
+      mySound6.play();
+    }
   }
 }
-
 // 截屏
 function keyPressed() {
   if (key === "s" || key === "S") {
     saveCanvas("myCanvas", "png");
   }
+
+  
 }
 
+function userGuide(){
+      textSize(100);
+  timer3++;
+  if(timer3<10){
+
+    text("3",400,400);
+  }
+    else if(timer>10&&timer<20){
+      text("2",400,400);}
+      else if (timer>20&&timer<30){
+        text("1",400,400);
+ }
+ else if(timer3>30<100){
+  push();
+  colorMode(RGB);
+  fill(255);
+  noStroke();
+  textSize(30);
+  text("Camera stage — press 's' to save snapshot", 10, 20);
+  text("come some music? click here to play!", 10, 40);
+  textSize(100);
+  text("let's blow it!",50,400);
+  pop();
+ }
+  
+ 
+  
+
+}
 // ================== 泡泡 Wand ==================
 function bubbleWand() {
-  background('#FFFBDA');
+  background("#FFFBDA");
 
-
-  // 使用全局 lev
+  //声控泡泡
   bubbleSize = map(lev, 0, 0.12, 10, 150);
   bubbleSize = constrain(bubbleSize, 5, 100);
 
-  bubbleNumber = floor(map(lev, 0, 0.12, 0, 10));
+  bubbleNumber = floor(map(lev, 0, 0.12, 0, 20));
   bubbleNumber = constrain(bubbleNumber, 0, 50);
-
-  // 基础生成（少量随机产生）
+/*
   if (random() < emitRate) {
     bubbles.push(new Bubble(mouseX - 70, mouseY - 10));
   }
-  // 根据音量生成更多
+    */
+
   if (lev > 0.01) {
     for (let i = 0; i < bubbleNumber; i++) {
-      bubbles.push(new Bubble(mouseX - 70 + random(-20,20), mouseY - 10 + random(-20,20)));
+      bubbles.push(
+        new Bubble(mouseX - 70 + random(-20, 20), mouseY - 10 + random(-20, 20))
+      );
     }
-  }
-
-  // 更新并显示泡泡（倒序删除）
-  for (let i = bubbles.length - 1; i >= 0; i--) {
-    let bubble= bubbles[i];
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+    let bubble = bubbles[i];
     bubble.update();
     bubble.display();
 
@@ -174,6 +263,9 @@ function bubbleWand() {
     }
   }
 
+  }
+
+  
   // 限制数量
   if (bubbles.length > maxBubbles) {
     bubbles.splice(0, bubbles.length - maxBubbles);
@@ -194,7 +286,6 @@ function drawWand() {
   fill(100, 60, 40);
   rect(-8, -8, 16, 12, 4);
 
-  // 因为画布是 HSB，在这里我们用局部 RGB 来画亮点
   push();
   colorMode(RGB);
   fill(200, 240, 255, 200);
@@ -206,7 +297,6 @@ function drawWand() {
   pop();
 }
 
-// =================== Bubble class ===================
 class Bubble {
   constructor(x, y) {
     this.posX = x + random(-10, 10);
@@ -225,7 +315,6 @@ class Bubble {
   }
 
   update() {
-    // 用噪声让水平位置漂移
     this.posX += (noise(this.posX * 0.01, frameCount * 0.01) - 0.5) * 1.2;
     this.posY -= this.speed;
 
@@ -238,31 +327,28 @@ class Bubble {
     push();
     translate(this.posX, this.posY);
 
-    let transparent = map(this.age, 0, this.lifespan, 100, 10); // alpha in HSB 0..100
+    let transparent = map(this.age, 0, this.lifespan, 100, 10);
 
-    // 半透明填充
     noStroke();
     fill(this.color2, 30, 100, transparent * 0.4);
     ellipse(0, 0, this.size);
 
-    // 外圈
     let hue1 = (this.color + frameCount * 0.8) % 360;
     let hue2 = (this.color + 180 + this.hueShift) % 360;
 
     noFill();
     strokeWeight(2);
 
-    stroke(hue1, 80, 100, a);
+    stroke(hue1, 80, 100, transparent);
     ellipse(0, 0, this.size + 2);
 
-    stroke(hue2, 70, 100, a * 0.7);
+    stroke(hue2, 70, 100, transparent * 0.7);
     ellipse(0, 0, this.size + 4);
 
-    // 高光（使用 RGB 色彩空间以获得白色亮点）
     push();
     colorMode(RGB);
     noStroke();
-    fill(255, 255, 255, transparent * 2.55 * 0.9); // 转成 0-255 alpha
+    fill(255, 255, 255, transparent * 2.55 * 0.9);
     ellipse(-this.size * 0.12, -this.size * 0.12, this.size * 0.22);
 
     fill(200, 200, 255, transparent * 2.55 * 0.5);
@@ -273,50 +359,58 @@ class Bubble {
   }
 }
 
-// 放音乐或戳泡泡（鼠标按下）
 function mousePressed() {
-  // 播放主音效（如果加载）
-  try {
-    if (mySound && mySound.isLoaded && mySound.isLoaded()) {
-      if (!mySound.isPlaying()) mySound.play();
+  if (mySound && mySound.isLoaded()) {
+    if (!mySound.isPlaying()) {
+      mySound.play();
     }
-  } catch (e) {}
-
-
-  
+  }
 }
 
 // ================== 蒲公英 ==================
 function dandelion() {
-  image(img,0,0,800,800);
+  image(img, 0, 0,800, 600);
 
-
-  // 用正确的音量变量 lev
-  let blowCount = floor(map(lev, 0, 0.3, 0, seeds.length));
+  let blowCount = floor(map(lev, 0, 0.03, 0, seeds.length));
   blowCount = constrain(blowCount, 0, seeds.length);
-if (seeds.length===0){
-  for (let i = 0; i < 150; i++) {
-    let seedX = width/2 + random(-30, 30);
-     let seedY=height/2 + random(-30, 30);
-    seeds.push(new Seed(seedX,seedY));
+  if (seeds.length === 0) {
+    for (let i = 0; i < 150; i++) {
+      //0
+      let seedX = width / 2 + random(-30, 30);
+      let seedY = height / 2 + random(-30, 30);
+      seeds.push(new Seed(seedX, seedY));
+//1
+        let seedX1 = width / 2 + random(-50, 50);
+      let seedY1 = height / 2 + random(-50, 50);
+      seeds.push(new Seed(seedX1, seedY1));
+      //2
+        let seedX2 = width / 2 + random(-20, 20);
+      let seedY2 = height / 2 + random(-20, 20);
+      seeds.push(new Seed(seedX2, seedY2));
+      //3
+        let seedX3 = width / 2 + random(-70, 70);
+      let seedY3 = height / 2 + random(-70, 70);
+      seeds.push(new Seed(seedX3, seedY3));
+      //4
+        let seedX4 = width / 2 + random(-35, 35);
+      let seedY4 = height / 2 + random(-35, 35);
+      seeds.push(new Seed(seedX4, seedY4));
+    }
   }
-}
 
   // 让前 n 个种子飞
   for (let i = 0; i < blowCount; i++) {
     seeds[i].isFlying = true;
   }
 
-  // 更新 & 显示
   for (let s of seeds) {
     s.update();
     s.display();
   }
 
-  // 蒲公英中心
   fill(255);
   noStroke();
-  circle(width/2, height/2, 20);
+  circle(width / 2, height / 2, 20);
 }
 
 class Seed {
@@ -345,10 +439,10 @@ class Seed {
   }
 }
 
-// ================== 生日蛋糕 ==================
+// ================== 蛋糕 ==================
 function birthdayCake() {
-  background('black');
-//drawCakeStand
+  background("black");
+  //drawCakeStand
   push();
   translate(width / 2, height / 2 + 180);
   noStroke();
@@ -381,9 +475,9 @@ function birthdayCake() {
     translate(x, y);
     rotate(a);
     noStroke();
-    fill('rgb(201,163,54)');
+    fill("rgb(201,163,54)");
     ellipse(0, 0, 45, 25);
-    fill('pink');
+    fill("pink");
     ellipse(-8, -4, 10, 8);
     ellipse(-8, -4, 20, 30);
     pop();
@@ -422,7 +516,7 @@ function birthdayCake() {
     line(x - 18, 0, x + 18, 0);
 
     noStroke();
-    fill('pink');
+    fill("pink");
     ellipse(x - 8, 8, 22, 18);
     ellipse(x + 8, 8, 22, 18);
     triangle(x - 18, 10, x + 18, 10, x, 30);
@@ -436,7 +530,7 @@ function birthdayCake() {
   pop();
 
   //drawHangingRuffles();
-   push();
+  push();
   translate(-15, 52);
 
   noFill();
@@ -492,15 +586,15 @@ function birthdayCake() {
 
   pop();
   //drawCandleRing();
-   push();
+  push();
   translate(0, -100);
 
   let candleCount = 12;
-  let radius = 140; // 缩小半径避免超出蛋糕
+  let radius = 200;
   let flicker = sin(frameCount * 0.2) * 3;
 
   for (let i = 0; i < candleCount; i++) {
-    let angle = 360 / candleCount * i;
+    let angle = (360 / candleCount) * i;
 
     let x = cos(angle) * radius * 0.55;
     let y = sin(angle) * radius * 0.25;
@@ -515,11 +609,7 @@ function birthdayCake() {
     fill("#ff80aa");
     rect(-4, -15, 8, 4, 2);
 
-    // 火焰
-    fill("#ffcc33");
-    ellipse(0, -32 + flicker * 0.4, 12, 18);
-    fill("#ff9933");
-    ellipse(0, -36 + flicker, 8, 12);
+    
 
     pop();
   }
@@ -527,11 +617,20 @@ function birthdayCake() {
   pop();
 
   pop();
+ 
+}
+
+//蜡烛火焰
+function drawFlame(){
+  
+    fill("#ffcc33");
+    ellipse(0, -32 + flicker * 0.4, 12, 18);
+    fill("#ff9933");
+    ellipse(0, -36 + flicker, 8, 12);
 }
 
 // ================= 自画像 =================
 function selfProtrait() {
-  // 自画像里使用弧度模式以配合 PI 的操作（使用 push/pop 避免影响全局）
   push();
   angleMode(RADIANS);
 
@@ -565,59 +664,272 @@ function selfProtrait() {
   fill(210, 188, 171);
   stroke("rgb(88,179,106)");
   arc(200, 170, 60, 30, PI, 2 * PI);
-  arc(140, 250, 120, 120, 2 * PI, PI);
   arc(110, 170, 60, 30, PI, 2 * PI);
-  
+  fill("rgb(241,226,116)");
+  arc(140, 250, 120, 120, 2 * PI, PI);
 
-  // 嘴巴的动作：每隔 interval 切换状态
+  //嘴巴
   if (millis() - lastSwitchTime > interval) {
-    current = 1 - current; // 0 <-> 1
+    current = 1 - current;
     lastSwitchTime = millis();
   }
 
   if (current === 0) {
-    stroke(0);
+    stroke("rgba(129,95,53,0.73)");
     noFill();
     bezier(130, 180, 90, 290, 300, 260, 100, 240);
   } else {
-    // 圆形嘴
-    noStroke();
-    fill(0);
+    stroke("rgba(129,95,53,0.73)");
     circle(140, 260, 50);
   }
 
-  pop(); // 恢复角度模式与绘图状态
-}
-function cameraPicture(){
-  background(0);
-   image(cam, 0, 0, 400,400);
-   //mist
-   for(let i =0;i<100;i++){
-    mist[i]= new Mist(this.x,this.y);
-
-   }
-   for(let i =0;i<500;i++){
-    mist[i].move();
-    mist[i].display();
-   }
-   class Mist{
-constructor(){
-  this.x = random(250,width);
-  this.y = random(250,height);
-  this.size = random(10,20);
+  pop();
   
 }
-move(){
 
-}
-display(){
-  nostroke();
-  fill('grey');
-  circle(this.x,this.y,this.size);
-}
-   }
-splice(){
+//fogs
 
+ 
+class Fog {
+  constructor(x, y) {
+    this.pos = createVector(x, y);
+    this.baseAlpha = random(80, 130);
+    this.alpha = this.baseAlpha;
+    this.size = random(60, 140);
+
+    this.vel = createVector(0, 0);
+  }
+
+  applySoftWind() {
+    let n = noise(this.pos.x * 0.001, this.pos.y * 0.001, t);
+    let angle = map(n, 0, 1, -0.6, 0.6);
+
+    let wind = p5.Vector.fromAngle(angle);
+    wind.mult(0.2);
+    this.vel.lerp(wind, 0.05);
+  }
+
+  applyBlow() {
+    let n = noise(
+      (this.pos.x + t * 200) * 0.002,
+      (this.pos.y + t * 200) * 0.002
+    );
+
+    let blowDir = createVector(1, 1).normalize();
+    blowDir.mult(map(n, 0, 1, 0.3, 2.0));
+
+    this.vel.lerp(blowDir, 0.08);
+    this.alpha = lerp(this.alpha, 0, 0.01);
+  }
+
+  update() {
+    this.pos.add(this.vel);
+    this.pos.x += random(-0.2, 0.2);
+    this.pos.y += random(-0.2, 0.2);
+  }
+
+  display() {
+    noStroke();
+    fill(220, this.alpha);
+    ellipse(this.pos.x, this.pos.y, this.size);
+  }
+}
+function mist1() {
+  t += 0.003;
+
+  for (let fog of fogs) {
+
+    fog.applySoftWind();
+
+    if (blowing) fog.applyBlow();
+
+    fog.update();
+    fog.display();
+  }
 }
 
+class Fog2 {
+  constructor(x, y) {
+    this.pos = createVector(x, y);
+    this.baseAlpha = random(80, 130);
+    this.alpha = this.baseAlpha;
+    this.size = random(60, 140);
+
+    this.vel = createVector(0, 0);
+  }
+
+  applySoftWind2() {
+    let n = noise(this.pos.x * 0.001, this.pos.y * 0.001, t);
+    let angle = map(n, 0, 1, -0.6, 0.6);
+
+    let wind = p5.Vector.fromAngle(angle);
+    wind.mult(0.2);
+    this.vel.lerp(wind, 0.05);
+  }
+
+  applyBlow2() {
+    let n = noise(
+      (this.pos.x + t * 200) * 0.002,
+      (this.pos.y + t * 200) * 0.002
+    );
+
+    let blowDir = createVector(1, 1).normalize();
+    blowDir.mult(map(n, 0, 1, 0.3, 2.0));
+
+    this.vel.lerp(blowDir, 0.08);
+    this.alpha = lerp(this.alpha, 0, 0.01);
+  }
+
+  update2() {
+    this.pos.add(this.vel);
+    this.pos.x += random(-0.2, 0.2);
+    this.pos.y += random(-0.2, 0.2);
+  }
+
+  display2() {
+    noStroke();
+    fill(220, this.alpha);
+    ellipse(this.pos.x, this.pos.y, this.size);
+  }
 }
+
+function mist2(){
+  t2 = 0;
+t2 += 0.003;
+
+  for (let fog of fogs) {
+
+    fog2.applySoftWind2();
+
+    if (blowing) fog.applyBlow2();
+
+    fog2.update2();
+    fog2.display2();
+  }
+}
+
+
+
+
+//========用户的脸===========
+function cameraPicture() {
+   background("#7DE2C9");
+  image(cam, 0, 0, 400, 400);
+
+  /*
+  //mist
+  for (let i = 0; i < 500; i++) {
+    mist[i] = new SecMist(this.x, this.y);
+  }
+  for (let i = 0; i < 500; i++) {
+    mist[i].move();
+    mist[i].display();
+  }
+  let spliceNumber = map(lev,0,0.01,0,500);
+  mist.splice(i, spliceNumber);
+  class SecMist {
+    constructor() {
+      this.x = random(250, width);
+      this.y = random(250, height);
+      this.size = random(10, 20);
+    }
+    move() {
+      thisX = this.x += random(-1, 1);
+      this.y = this.y += random(-1, 1);
+    }
+    display() {
+      nostroke();
+      fill('rgb(249,233,233)');
+      circle(this.x, this.y, this.size);
+    }
+  }
+    */
+}
+function Celebration(){
+  push();
+  translate(200,130);
+  selfProtrait();
+  pop();
+  angleMode("DEGREES");
+
+  // 简单的礼花亮光
+  if (explode) {
+    fill(255, 200, 0, 150);
+    ellipse(width/2, height/2, 120, 120);
+    fill(255, 80, 0, 180);
+    ellipse(width/2, height/2, 60, 60);
+  }
+
+  // 更新彩带
+  for (let c of confetti) {
+    c.update();
+    c.show();
+  }
+
+
+
+if (stage === 6){
+explode = true;
+  makeConfetti();
+  setTimeout(() => explode = false, 350);
+}
+}
+
+
+// 生成彩带
+function makeConfetti() {
+  confetti = [];
+  for (let i = 0; i < 120; i++) {
+    confetti.push(new Confetti());
+  }
+}
+
+// 彩带
+class Confetti {
+  constructor() {
+    this.x = width / 2;
+    this.y = height / 2;
+
+    // 初始飞出方向
+    this.vx = random(-3, 3);
+    this.vy = random(-6, -2);
+
+    this.w = random(3, 6);     // 彩带宽度
+    this.h = random(12, 18);   // 彩带长度
+    this.angle = random(360);  // 彩带自身旋转角度
+    this.spin = random(-5, 5); // 旋转速度
+
+    this.color = color(random(255), random(255), random(255));
+  }
+
+  update() {
+    // 运动
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += 0.12;   // 下落加速度（重力）
+
+    // 左右飘动
+  this.x += sin(frameCount * 0.5 + this.angle) * 0.5;
+    // 旋转
+    this.angle += this.spin;
+
+    // 落地后停住（可删除）
+    if (this.y > height - this.h/2) {
+      this.y = height - this.h/2;
+    }
+  }
+
+  show() {
+    push();
+    translate(this.x, this.y);
+    rotate(this.angle);
+    noStroke();
+    fill(this.color);
+    rectMode(CENTER);
+    rect(0, 0, this.w, this.h, 2); // 小纸条
+    pop();
+  }
+}
+
+
+
